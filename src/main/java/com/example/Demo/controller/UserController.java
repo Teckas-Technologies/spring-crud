@@ -1,5 +1,6 @@
 package com.example.Demo.controller;
 
+import com.example.Demo.Exception.UserNotFoundException;
 import com.example.Demo.model.common.PageResponse;
 import com.example.Demo.model.dao.User;
 import com.example.Demo.model.dto.UserDTO;
@@ -44,11 +45,13 @@ public class UserController {
             @ApiResponse(responseCode = "404", description = "User not found")
     })
     @GetMapping("/{id}")
-    public ResponseEntity<?> getUserById(@PathVariable Long id){
+    public ResponseEntity<?> getUserById(@PathVariable Long id) {
         logger.info("Received request to get user with id: {}", id);
-        Optional<User> user = userService.getUser(id);
+        User user = userService.getUser(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
         return new ResponseEntity<>(user, HttpStatus.OK);
     }
+
 
     @Operation(summary = "Get all users", description = "Fetches a paginated list of all users")
     @ApiResponses({
