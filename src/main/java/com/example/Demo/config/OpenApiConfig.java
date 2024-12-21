@@ -11,8 +11,8 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("User Management API")
+                        .title("Entity Management API")
                         .version("1.0")
-                        .description("This API provides CRUD operations for managing users."));
+                        .description("This API provides CRUD operations for managing entities."));
     }
 }
