@@ -47,13 +47,7 @@ public class UserController {
     public ResponseEntity<?> getUserById(@PathVariable Long id){
         logger.info("Received request to get user with id: {}", id);
         Optional<User> user = userService.getUser(id);
-        if (user.isPresent()) {
-            logger.info("User found: {}", user.get());
-            return new ResponseEntity<>(user, HttpStatus.OK);
-        } else {
-            logger.warn("User with id {} not found", id);
-            return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
-        }
+        return new ResponseEntity<>(user, HttpStatus.OK);
     }
 
     @Operation(summary = "Get all users", description = "Fetches a paginated list of all users")
