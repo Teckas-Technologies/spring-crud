@@ -1,5 +1,6 @@
 package com.example.Demo.service.impl;
 
+import com.example.Demo.Exception.ValidationException;
 import com.example.Demo.model.common.PageResponse;
 import com.example.Demo.model.dao.Entity;
 import com.example.Demo.model.dto.EntityDTO;
@@ -46,7 +47,7 @@ public class EntityServiceImplTest {
     }
 
     @Test
-    void testAddEntity() {
+    void testAddEntity() throws ValidationException{
         when(entityRepository.save(any(Entity.class))).thenReturn(entity);
 
         Entity result = userService.addEntity(entityDTO);
@@ -57,6 +58,25 @@ public class EntityServiceImplTest {
         assertEquals(entityDTO.getEntityType(), result.getEntityType());
         verify(entityRepository, times(1)).save(any(Entity.class)); // Verifying save was called once
     }
+
+    @Test
+    void testAddEntity_ValidationException() {
+        // Simulating an invalid EntityDTO with null name
+        EntityDTO invalidEntityDTO = new EntityDTO();
+        invalidEntityDTO.setName(null); // This will trigger validation failure
+
+        // Test that the ValidationException is thrown
+        ValidationException exception = assertThrows(ValidationException.class, () -> {
+            userService.addEntity(invalidEntityDTO);
+        });
+
+        // Verifying the exception message
+        assertEquals("Entity name cannot be null", exception.getMessage());
+
+        // Optionally, verify that the repository save method was not called
+        verify(entityRepository, times(0)).save(any(Entity.class)); // Verifying save was not called
+    }
+
 
     @Test
     void testGetEntity_Found() {

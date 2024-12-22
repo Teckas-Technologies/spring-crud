@@ -1,5 +1,6 @@
 package com.example.Demo.service.impl;
 
+import com.example.Demo.Exception.ValidationException;
 import com.example.Demo.model.common.PageResponse;
 import com.example.Demo.model.dao.Entity;
 import com.example.Demo.model.dto.EntityDTO;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+//service implementation class
 @Service
 public class EntityServiceImpl implements EntityService {
 
@@ -22,10 +24,20 @@ public class EntityServiceImpl implements EntityService {
     @Autowired
     private EntityRepository entityRepository;
 
+    /**
+     * Adds a new entity to the system.
+     * @param entityDTO The data transfer object containing entity details.
+     * @return The newly created Entity.
+     * @throws ValidationException If the entity name is null or invalid.
+     */
+
     @Override
-    public Entity addEntity(EntityDTO entityDTO) {
+    public Entity addEntity(EntityDTO entityDTO) throws ValidationException {
            logger.info("Adding entity");
             Entity entity = new Entity();
+            if (entityDTO == null || entityDTO.getName() == null) {
+                throw new ValidationException("Entity name cannot be null");
+            }
             entity.setName(entityDTO.getName());
             entity.setDescription(entityDTO.getDescription());
             entity.setEntityType(entityDTO.getEntityType());
@@ -34,12 +46,26 @@ public class EntityServiceImpl implements EntityService {
         return entity;
     }
 
+    /**
+     * Fetches an entity by its unique ID.
+     * @param id The ID of the entity to retrieve.
+     * @return An Optional containing the entity if found.
+     */
     @Override
     public Optional<Entity> getEntity(Long id) {
         logger.info("Fetching Entity with ID: {}", id);
         return entityRepository.findById(id);
     }
 
+    /**
+     *  Fetches a paginated and optionally filtered list of entities.
+     * @param pageNo Page number for pagination.
+     * @param pageSize  Number of records per page
+     * @param name Optional filter by name
+     * @param sortBy Field to sort by (default: createdAt)
+     * @param entityType Optional filter by entity type
+     * @return A PageResponse containing the paginated list of entities.
+     */
     @Override
     public PageResponse getAllEntity(int pageNo, int pageSize, String name, String sortBy, String entityType) {
         logger.info("Fetching Entities with pageNo: {}, pageSize: {}, name: {}, sortBy: {}, entityType: {}", pageNo, pageSize, name, sortBy, entityType);
@@ -77,7 +103,11 @@ public class EntityServiceImpl implements EntityService {
     }
 
 
-
+    /**
+     * Updates an existing entity with the given ID.
+     * @param id  The ID of the entity to update.
+     * @param entityDTO The new details for the entity.
+     */
     @Override
     public void updateEntity(Long id, EntityDTO entityDTO) {
         logger.info("Updating Entity with ID: {}", id);
@@ -89,6 +119,10 @@ public class EntityServiceImpl implements EntityService {
         logger.info("Entity with ID: {} updated successfully", id);
     }
 
+    /**
+     *  Deletes an entity by its unique ID.
+     * @param id The ID of the entity to delete.
+     */
     @Override
     public void deleteEntityById(Long id) {
         logger.info("Attempting to delete Entity with ID: {}", id);

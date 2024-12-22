@@ -1,6 +1,7 @@
 package com.example.Demo.controller;
 
 import com.example.Demo.Exception.EntityNotFoundException;
+import com.example.Demo.Exception.ValidationException;
 import com.example.Demo.model.common.PageResponse;
 import com.example.Demo.model.dao.Entity;
 import com.example.Demo.model.dto.EntityDTO;
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/entities")
@@ -24,19 +26,31 @@ public class EntityController {
     @Autowired
     private EntityService entityService;
 
+    /**
+     *Endpoint to add a new entity
+     * @param entityDTO -  The details of the entity to be created.
+     * @return ResponseEntity containing the created entity.
+     * @throws ValidationException ValidationException if the provided data is invalid.
+     */
+
     @Operation(summary = "Add a new entity", description = "Creates a new user in the system")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "entity created successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input data")
     })
     @PostMapping("/")
-    public ResponseEntity<?> addEntity(@RequestBody EntityDTO entityDTO) {
+    public ResponseEntity<?> addEntity(@RequestBody EntityDTO entityDTO)throws ValidationException {
         logger.info("Received request to add Entity: {}", entityDTO);
         Entity entity = entityService.addEntity(entityDTO);
         logger.info("Entity created successfully");
         return new ResponseEntity<>(entity,HttpStatus.CREATED);
     }
 
+    /**
+     * Endpoint to fetch an entity by its ID.
+     * @param id  The unique ID of the entity.
+     * @return ResponseEntity containing the entity details.
+     */
     @Operation(summary = "Get Entity by ID", description = "Fetches Entity details by their unique ID")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Entity found"),
@@ -50,6 +64,15 @@ public class EntityController {
         return new ResponseEntity<>(entity, HttpStatus.OK);
     }
 
+    /**
+     *  Endpoint to fetch all entities with optional filters and pagination.
+     * @param pageNo Page number for pagination (default: 0).
+     * @param pageSize Number of records per page (default: 10).
+     * @param name Optional filter by name.
+     * @param sortBy Field to sort the results (default: createdAt).
+     * @param entityType Optional filter by entity type.
+     * @return ResponseEntity containing a paginated list of entities.
+     */
 
     @Operation(summary = "Get all Entities", description = "Fetches a paginated list of all Entity")
     @ApiResponses({
@@ -68,6 +91,13 @@ public class EntityController {
         return new ResponseEntity<>(user, HttpStatus.OK);
     }
 
+    /**
+     * Endpoint to update an entity's details.
+     * @param id The unique ID of the entity to be updated.
+     * @param entityDTO The new details of the entity.
+     * @return ResponseEntity with a success message.
+     * @throws ValidationException ValidationException if the provided data is invalid.
+     */
 
     @Operation(summary = "Update a Entity", description = "Updates Entity details for the given ID")
     @ApiResponses({
@@ -75,13 +105,18 @@ public class EntityController {
             @ApiResponse(responseCode = "404", description = "Entity not found")
     })
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateEntity(@PathVariable Long id,@RequestBody EntityDTO entityDTO){
+    public ResponseEntity<?> updateEntity(@PathVariable Long id,@RequestBody EntityDTO entityDTO)throws ValidationException {
         logger.info("Received request to update Entity with id: {}", id);
         entityService.updateEntity(id, entityDTO);
         logger.info("Entity with id {} updated successfully", id);
         return new ResponseEntity<>("Entity updated successfully",HttpStatus.OK);
     }
 
+    /**
+     * Endpoint to delete an entity.
+     * @param id The unique ID of the entity to be deleted.
+     * @return ResponseEntity with a success message.
+     */
     @Operation(summary = "Delete a Entity", description = "Deletes a Entity for the given ID")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Entity deleted successfully"),

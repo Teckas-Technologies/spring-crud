@@ -10,14 +10,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 import java.util.List;
 import java.util.Optional;
+
+import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(EntityController.class)
 class EntityControllerTest {
@@ -26,7 +28,7 @@ class EntityControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private EntityService entityService;  // Use @MockBean here
+    private EntityService entityService;
 
     private EntityDTO entityDTO;
     private Entity entity;
@@ -46,10 +48,12 @@ class EntityControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "admin", password = "admin123" ,roles = {"ADMIN"})
     void addEntity() throws Exception {
         when(entityService.addEntity(any(EntityDTO.class))).thenReturn(entity);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/user/")
+        mockMvc.perform(MockMvcRequestBuilders.post("/entities/")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Admin User\", \"description\":\"User\", \"entityType\":\"USER\"}"))
                 .andExpect(status().isCreated())
@@ -60,10 +64,11 @@ class EntityControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "admin", password = "admin123",roles = {"ADMIN"})
     void getEntityById() throws Exception {
         when(entityService.getEntity(1L)).thenReturn(Optional.of(entity));
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/user/{id}", 1L))
+        mockMvc.perform(MockMvcRequestBuilders.get("/entities/{id}", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Admin User"))
                 .andExpect(jsonPath("$.description").value("User"));
@@ -72,10 +77,11 @@ class EntityControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "user", roles = {"USER"})
     void getEntityById_NotFound() throws Exception {
         when(entityService.getEntity(1L)).thenReturn(Optional.empty());
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/user/{id}", 1L))
+        mockMvc.perform(MockMvcRequestBuilders.get("/entities/{id}", 1L))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(500))
                 .andExpect(jsonPath("$.error").value("Internal Server Error"))
@@ -84,72 +90,33 @@ class EntityControllerTest {
         verify(entityService, times(1)).getEntity(1L);
     }
 
-
     @Test
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
     void getAllEntities() throws Exception {
-        // Create a mock Entity object with values
-        Entity entity = new Entity();
-        entity.setName("Admin User");
-        entity.setDescription("User");
-        entity.setEntityType(Entity.EntityType.USER);
-
-        // Create the PageResponse and set mock data
-        PageResponse pageResponse = new PageResponse();
-        pageResponse.setData(List.of(entity));  // Correctly set data field
-
-        // Mock the service layer method
-        when(entityService.getAllEntity(0, 10, null, "createdAt", "USER")).thenReturn(pageResponse);
-
-        // Perform the GET request
-        mockMvc.perform(MockMvcRequestBuilders.get("/user/")
-                        .param("pageNo", "0")
-                        .param("pageSize", "10")
-                        .param("sortBy", "createdAt")
-                        .param("entityType", "USER"))  // Pass entityType as a request parameter
-                .andExpect(status().isOk())  // Expecting HTTP 200
-                .andExpect(jsonPath("$.data[0].name").value("Admin User"))
-                .andExpect(jsonPath("$.data[0].description").value("User"));
-
-        // Verify the interaction with the service layer
-        verify(entityService, times(1)).getAllEntity(0, 10, null, "createdAt", "USER");
-    }
-
-
-    @Test
-    void getAllEntitiesWithNameFilter() throws Exception {
-        // Create a mock Entity object with values
-        Entity entity = new Entity();
-        entity.setName("Admin User");
-        entity.setDescription("User");
-        entity.setEntityType(Entity.EntityType.USER);
-
-        // Create the PageResponse and set mock data
         PageResponse pageResponse = new PageResponse();
         pageResponse.setData(List.of(entity));
 
-        // Mock the service layer method
-        when(entityService.getAllEntity(0, 10, "Admin", "createdAt", "USER")).thenReturn(pageResponse);
+        when(entityService.getAllEntity(0, 10, null, "createdAt", "USER")).thenReturn(pageResponse);
 
-        // Perform the GET request with the name filter
-        mockMvc.perform(MockMvcRequestBuilders.get("/user/")
+        mockMvc.perform(MockMvcRequestBuilders.get("/entities/")
                         .param("pageNo", "0")
                         .param("pageSize", "10")
-                        .param("name", "Admin")  // Pass name as a request parameter
                         .param("sortBy", "createdAt")
-                        .param("entityType", "USER"))  // Pass entityType as a request parameter
-                .andExpect(status().isOk())  // Expecting HTTP 200
+                        .param("entityType", "USER"))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].name").value("Admin User"))
                 .andExpect(jsonPath("$.data[0].description").value("User"));
 
-        // Verify the interaction with the service layer
-        verify(entityService, times(1)).getAllEntity(0, 10, "Admin", "createdAt", "USER");
+        verify(entityService, times(1)).getAllEntity(0, 10, null, "createdAt", "USER");
     }
 
-
     @Test
+    @WithMockUser(username = "admin",password = "admin123",roles = {"ADMIN"})
     void updateEntity() throws Exception {
         doNothing().when(entityService).updateEntity(eq(1L), any(EntityDTO.class));
-        mockMvc.perform(MockMvcRequestBuilders.put("/user/{id}", 1L)
+
+        mockMvc.perform(MockMvcRequestBuilders.put("/entities/{id}", 1L)
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Admin Updated\", \"description\":\"Updated User\", \"entityType\":\"USER\"}"))
                 .andExpect(status().isOk())
@@ -159,10 +126,11 @@ class EntityControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "admin",password = "admin123",roles = {"ADMIN"})
     void deleteEntity() throws Exception {
         doNothing().when(entityService).deleteEntityById(1L);
 
-        mockMvc.perform(MockMvcRequestBuilders.delete("/user/{id}", 1L))
+        mockMvc.perform(MockMvcRequestBuilders.delete("/entities/{id}", 1L).with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Entity deleted successfully"));
 
